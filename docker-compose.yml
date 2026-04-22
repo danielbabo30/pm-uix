@@ -1,0 +1,11 @@
+services:
+  pm-system:
+    build: .
+    container_name: pm-system
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+    env_file:
+      - .env.production

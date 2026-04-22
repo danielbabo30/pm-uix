@@ -34,3 +34,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SQLite database (data stays local)
+*.db
+*.db-shm
+*.db-wal
+
+# Uploaded images
+/public/uploads/
