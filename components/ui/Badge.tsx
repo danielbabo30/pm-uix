@@ -1,6 +1,6 @@
 'use client';
 
-import { PRIORITY_COLORS, PRIORITY_LABELS, TEAM_COLORS, TEAM_LABELS } from '@/lib/constants';
+import { PRIORITY_COLORS, PRIORITY_LABELS, TEAM_LABELS } from '@/lib/constants';
 import type { Priority, Team } from '@/lib/types';
 
 export function PriorityBadge({ priority }: { priority: Priority }) {

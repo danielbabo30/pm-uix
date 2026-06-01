@@ -169,7 +169,6 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
   const isDevTeam  = merged.responsible_team === 'Development';
   const statusOptions: TaskStatus[] = (BOARD_COLUMNS[merged.responsible_team] ?? []) as TaskStatus[];
 
-  const autoAssignAssignee = false;
 
   return (
     <Modal open onClose={() => { save(); onClose(); }} wide>
@@ -325,7 +324,7 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
                   }}
                 >
                   <option value="">ללא שבוע</option>
-                  {options.map((w, i) => (
+                  {options.map((w) => (
                     <option key={w} value={w}>
                       {weekLabel(w)}{w === cur ? ' (נוכחי)' : ''}
                     </option>

@@ -22,7 +22,7 @@ const FIRST_MESSAGE: Message = {
 
 const DONE_SIGNAL = '✅ מצוין! יש לי את כל המידע הנדרש לכתיבת האפיון.';
 
-export default function AISpecChat({ taskId, taskTitle, taskDescription, onClose }: AISpecChatProps) {
+export default function AISpecChat({ taskTitle, taskDescription, onClose }: Omit<AISpecChatProps, 'taskId'> & { taskId?: string }) {
   const [messages,    setMessages]    = useState<Message[]>([FIRST_MESSAGE]);
   const [input,       setInput]       = useState('');
   const [streaming,   setStreaming]   = useState(false);
