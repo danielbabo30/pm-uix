@@ -11,30 +11,33 @@ import { fmtDate } from '@/lib/dateUtils';
 
 const ROLE_COLORS: Record<UserRole, string> = {
   'מנתח מערכות':    'bg-purple-100 text-purple-700',
-  'UI':              'bg-pink-100 text-pink-700',
-  'UX':              'bg-rose-100 text-rose-700',
-  'מפתח Be':         'bg-green-100 text-green-700',
-  'מפתח Fe':         'bg-blue-100 text-blue-700',
-  'Fs':              'bg-teal-100 text-teal-700',
+  'UI':              'bg-pink-100   text-pink-700',
+  'UX':              'bg-rose-100   text-rose-700',
+  'מפתח Be':         'bg-green-100  text-green-700',
+  'מפתח Fe':         'bg-blue-100   text-blue-700',
+  'Fs':              'bg-teal-100   text-teal-700',
   'ראש צוות פיתוח': 'bg-orange-100 text-orange-700',
+  'QA':              'bg-amber-100  text-amber-700',
 };
 
 /** Default screen permissions per role */
-const ROLE_DEFAULT_PERMS: Record<UserRole, { master: boolean; spec: boolean; design: boolean; dev: boolean }> = {
-  'UI':              { master: true,  spec: false, design: true,  dev: false },
-  'UX':              { master: true,  spec: false, design: true,  dev: false },
-  'מפתח Be':         { master: true,  spec: false, design: false, dev: true  },
-  'מפתח Fe':         { master: true,  spec: false, design: false, dev: true  },
-  'Fs':              { master: true,  spec: false, design: false, dev: true  },
-  'מנתח מערכות':    { master: true,  spec: true,  design: false, dev: false },
-  'ראש צוות פיתוח': { master: true,  spec: false, design: false, dev: true  },
+const ROLE_DEFAULT_PERMS: Record<UserRole, { master: boolean; spec: boolean; design: boolean; dev: boolean; qa: boolean }> = {
+  'UI':              { master: true,  spec: false, design: true,  dev: false, qa: false },
+  'UX':              { master: true,  spec: false, design: true,  dev: false, qa: false },
+  'מפתח Be':         { master: true,  spec: false, design: false, dev: true,  qa: false },
+  'מפתח Fe':         { master: true,  spec: false, design: false, dev: true,  qa: false },
+  'Fs':              { master: true,  spec: false, design: false, dev: true,  qa: false },
+  'מנתח מערכות':    { master: true,  spec: true,  design: false, dev: false, qa: false },
+  'ראש צוות פיתוח': { master: true,  spec: false, design: false, dev: true,  qa: true  },
+  'QA':              { master: true,  spec: false, design: false, dev: false, qa: true  },
 };
 
 const SCREEN_PERMS = [
   { key: 'can_see_master', label: 'תצוגה כללית' },
-  { key: 'can_see_spec',   label: 'איפיון'  },
-  { key: 'can_see_design', label: 'עיצוב'   },
+  { key: 'can_see_spec',   label: 'לוח UX'  },
+  { key: 'can_see_design', label: 'לוח UI'  },
   { key: 'can_see_dev',    label: 'פיתוח'   },
+  { key: 'can_see_qa',     label: 'בדיקות'  },
 ] as const;
 
 // ── Vacation sub-panel ────────────────────────────────────────────────────────
@@ -292,7 +295,7 @@ export default function UserManager() {
   const [password, setPassword] = useState('');
   const [showPw, setShowPw]   = useState(false);
   const [role, setRole]       = useState<UserRole | ''>('');
-  const [perms, setPerms]     = useState({ master: true, spec: true, design: true, dev: true });
+  const [perms, setPerms]     = useState({ master: true, spec: true, design: true, dev: true, qa: true });
   const [newDailyHours, setNewDailyHours] = useState('');
   const [error, setError]           = useState('');
   const [editingId, setEditingId]   = useState<number | null>(null);
@@ -321,12 +324,13 @@ export default function UserManager() {
         can_see_spec:   perms.spec,
         can_see_design: perms.design,
         can_see_dev:    perms.dev,
+        can_see_qa:     perms.qa,
       }),
     });
     setAdding(false);
     if (!res.ok) { const d = await res.json(); setError(d.error || 'שגיאה'); return; }
     setName(''); setEmail(''); setPassword(''); setRole(''); setNewDailyHours('');
-    setPerms({ master: true, spec: true, design: true, dev: true });
+    setPerms({ master: true, spec: true, design: true, dev: true, qa: true });
     load();
   };
 
@@ -392,7 +396,7 @@ export default function UserManager() {
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-gray-600">גישה למסכים</span>
           <div className="flex flex-wrap gap-2">
-            {([['master','תצוגה כללית'],['spec','איפיון'],['design','עיצוב'],['dev','פיתוח']] as const).map(([k, label]) => (
+            {([['master','תצוגה כללית'],['spec','לוח UX'],['design','לוח UI'],['dev','פיתוח'],['qa','בדיקות']] as const).map(([k, label]) => (
               <button key={k} type="button" onClick={() => setPerms(p => ({ ...p, [k]: !p[k] }))}
                 className={`text-xs px-3 py-1 rounded-full border transition-colors ${
                   perms[k] ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-400 border-gray-200'

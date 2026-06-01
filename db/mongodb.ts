@@ -38,6 +38,7 @@ const UserSchema = new Schema({
   can_see_spec:   { type: Number, default: 1 },
   can_see_design: { type: Number, default: 1 },
   can_see_dev:    { type: Number, default: 1 },
+  can_see_qa:     { type: Number, default: 1 },
   daily_hours:    Number,
   created_at:     { type: String, default: () => new Date().toISOString() },
 });
@@ -86,6 +87,9 @@ const TaskSchema = new Schema({
   frontend_dev_id:    Number,
   backend_effort:     Number,
   frontend_effort:    Number,
+  effort:             Number,
+  project_id:         Number,
+  work_week:          String,   // "YYYY-WW" e.g. "2026-24"
   tests_passed:       { type: Number, default: 0 },
   flag:               { type: Number, default: 0 },  // 0=none 1=one flag 2=two flags
   sort_order:         { type: Number, default: 0 },
@@ -96,6 +100,14 @@ const TaskSchema = new Schema({
   updated_at:         { type: String, default: () => new Date().toISOString() },
 }, { _id: false });
 export const TaskModel = mongoose.models.Task || mongoose.model('Task', TaskSchema);
+
+// ── Project ───────────────────────────────────────────────────────────────
+const ProjectSchema = new Schema({
+  id:         { type: Number, unique: true },
+  name:       { type: String, required: true },
+  created_at: { type: String, default: () => new Date().toISOString() },
+});
+export const ProjectModel = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
 
 // ── Holiday ───────────────────────────────────────────────────────────────
 const HolidaySchema = new Schema({
@@ -195,6 +207,7 @@ export async function getUserBySession(token: string) {
     is_admin: user.is_admin,
     can_see_master: user.can_see_master, can_see_spec: user.can_see_spec,
     can_see_design: user.can_see_design, can_see_dev: user.can_see_dev,
+    can_see_qa: user.can_see_qa ?? 1,
   };
 }
 
@@ -229,6 +242,13 @@ export async function formatTask(task: any) {
   const users = userIds.length ? await UserModel.find({ id: { $in: userIds } }) : [];
   const umap: Record<number, string> = {};
   for (const u of users) umap[u.id] = u.name;
+
+  let project_name: string | null = null;
+  if (task.project_id) {
+    const proj = await ProjectModel.findOne({ id: task.project_id });
+    project_name = proj?.name ?? null;
+  }
+
   return {
     id: task._id,
     parent_id: task.parent_id ?? null,
@@ -246,6 +266,10 @@ export async function formatTask(task: any) {
     frontend_dev_name: task.frontend_dev_id ? (umap[task.frontend_dev_id] ?? null) : null,
     backend_effort: task.backend_effort ?? null,
     frontend_effort: task.frontend_effort ?? null,
+    effort: task.effort ?? null,
+    project_id: task.project_id ?? null,
+    project_name,
+    work_week: task.work_week ?? null,
     tests_passed: task.tests_passed ?? 0,
     flag: task.flag ?? 0,
     sort_order: task.sort_order ?? 0,
@@ -271,7 +295,7 @@ async function seedDefaults() {
     const id = await getNextId('users');
     await UserModel.create({
       id, name: 'דניאל באבו', email: adminEmail, password_hash: hash,
-      is_admin: 1, can_see_master: 1, can_see_spec: 1, can_see_design: 1, can_see_dev: 1,
+      is_admin: 1, can_see_master: 1, can_see_spec: 1, can_see_design: 1, can_see_dev: 1, can_see_qa: 1,
     });
   } else {
     await UserModel.updateOne({ email: adminEmail }, { $set: { name: 'דניאל באבו' } });
@@ -307,4 +331,5 @@ export interface SessionUser {
   can_see_spec: number;
   can_see_design: number;
   can_see_dev: number;
+  can_see_qa: number;
 }

@@ -5,19 +5,20 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import TaskCard from './TaskCard';
 import { STATUS_LABELS } from '@/lib/constants';
 import type { Task, Team, TaskStatus } from '@/lib/types';
-import { Plus } from 'lucide-react';
+import { Plus, Download } from 'lucide-react';
 
 interface ColumnProps {
   status: TaskStatus;
   tasks: Task[];
   onTaskClick: (id: string) => void;
   onAddTask?: () => void;
+  onDownload?: () => void;
   showTeam?: boolean;
   accentClass?: string;
   onTransfer?: (taskId: string, toTeam: Team, toStatus: TaskStatus) => void;
 }
 
-export default function Column({ status, tasks, onTaskClick, onAddTask, showTeam, accentClass, onTransfer }: ColumnProps) {
+export default function Column({ status, tasks, onTaskClick, onAddTask, onDownload, showTeam, accentClass, onTransfer }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
@@ -32,14 +33,25 @@ export default function Column({ status, tasks, onTaskClick, onAddTask, showTeam
             </span>
           )}
         </div>
-        {onAddTask && (
-          <button
-            onClick={onAddTask}
-            className="p-0.5 text-gray-300 hover:text-gray-500 hover:bg-gray-100 rounded transition-colors"
-          >
-            <Plus size={15} />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {onDownload && (
+            <button
+              onClick={onDownload}
+              title="הורד אקסל"
+              className="p-0.5 text-gray-300 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+            >
+              <Download size={14} />
+            </button>
+          )}
+          {onAddTask && (
+            <button
+              onClick={onAddTask}
+              className="p-0.5 text-gray-300 hover:text-gray-500 hover:bg-gray-100 rounded transition-colors"
+            >
+              <Plus size={15} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Drop zone */}

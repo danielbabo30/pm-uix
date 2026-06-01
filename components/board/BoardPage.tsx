@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
 import BoardView from './BoardView';
 import CreateTaskModal from '@/components/task/CreateTaskModal';
 import { BOARD_COLUMNS, TEAM_LABELS } from '@/lib/constants';
 import type { Task, Team, TaskStatus } from '@/lib/types';
 import { Plus, RefreshCw } from 'lucide-react';
+import ProjectFilter from '@/components/ui/ProjectFilter';
 
 interface BoardPageProps {
   team: Team | 'Master';
@@ -16,8 +16,7 @@ function BoardPageInner({ team }: BoardPageProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
-  const searchParams = useSearchParams();
-  const initialOpen = searchParams.get('open');
+  const [projectFilter, setProjectFilter] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     const url = team === 'Master' ? '/api/tasks' : `/api/tasks?team=${team}`;
@@ -30,6 +29,7 @@ function BoardPageInner({ team }: BoardPageProps) {
   useEffect(() => { load(); }, [load]);
 
   const columns = BOARD_COLUMNS[team] as TaskStatus[];
+  const visibleTasks = projectFilter ? tasks.filter(t => t.project_id === projectFilter) : tasks;
 
   return (
     <div className="flex flex-col h-full" dir="rtl">
@@ -40,10 +40,11 @@ function BoardPageInner({ team }: BoardPageProps) {
             {team === 'Master' ? 'תצוגה כללית' : `לוח ${TEAM_LABELS[team as Team]}`}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {tasks.length} משימות
+            {visibleTasks.length} משימות
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <ProjectFilter value={projectFilter} onChange={setProjectFilter} />
           <button
             onClick={load}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -70,11 +71,10 @@ function BoardPageInner({ team }: BoardPageProps) {
         <div className="flex-1 overflow-hidden flex flex-col pt-4">
           <BoardView
             columns={columns}
-            tasks={tasks}
+            tasks={visibleTasks}
             team={team === 'Master' ? undefined : (team as Team)}
             onRefresh={load}
             showTeam={team === 'Master'}
-            initialOpenTaskId={initialOpen}
           />
         </div>
       )}

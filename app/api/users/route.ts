@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
     can_see_spec: body.can_see_spec !== false ? 1 : 0,
     can_see_design: body.can_see_design !== false ? 1 : 0,
     can_see_dev: body.can_see_dev !== false ? 1 : 0,
+    can_see_qa: body.can_see_qa !== false ? 1 : 0,
     daily_hours: body.daily_hours != null ? Number(body.daily_hours) : null,
   });
 
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
     can_see_spec: user.can_see_spec,
     can_see_design: user.can_see_design,
     can_see_dev: user.can_see_dev,
+    can_see_qa: user.can_see_qa,
     daily_hours: user.daily_hours,
     created_at: user.created_at,
   };

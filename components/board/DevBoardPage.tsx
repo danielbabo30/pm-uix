@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
 import BoardView from './BoardView';
 import WorkloadTable from './WorkloadTable';
 import CreateTaskModal from '@/components/task/CreateTaskModal';
@@ -10,6 +9,8 @@ import { BOARD_COLUMNS } from '@/lib/constants';
 import type { Task, TaskStatus, Sprint } from '@/lib/types';
 import { Plus, RefreshCw, Flag } from 'lucide-react';
 import { useCurrentUser } from '@/lib/userContext';
+import { exportSprintToExcel } from '@/lib/sprintExcel';
+import ProjectFilter from '@/components/ui/ProjectFilter';
 
 const DEV_COLUMNS = BOARD_COLUMNS['Development'] as TaskStatus[];
 
@@ -20,8 +21,7 @@ function DevBoardInner() {
   const [loading,        setLoading]        = useState(true);
   const [createOpen,     setCreateOpen]     = useState(false);
   const [wizardOpen,     setWizardOpen]     = useState(false);
-  const searchParams = useSearchParams();
-  const initialOpen = searchParams.get('open');
+  const [projectFilter,  setProjectFilter]  = useState<number | null>(null);
 
   const load = useCallback(async () => {
     const [tasksRes, sprintsRes] = await Promise.all([
@@ -38,7 +38,15 @@ function DevBoardInner() {
   useEffect(() => { load(); }, [load]);
 
   const currentSprint  = sprints.find(s => s.sprint_order === 0) ?? null;
+  const nextSprint     = sprints.find(s => s.sprint_order === 1) ?? null;
+  const afterSprint    = sprints.find(s => s.sprint_order === 2) ?? null;
   const currentTasks   = tasks.filter(t => t.status === 'Current Sprint');
+
+  const sprintDownloads = {
+    'Current Sprint':    () => exportSprintToExcel(tasks, 'Current Sprint',    currentSprint?.name ?? 'ספרינט נוכחי'),
+    'Next Sprint':       () => exportSprintToExcel(tasks, 'Next Sprint',       nextSprint?.name    ?? 'ספרינט הבא'),
+    'Sprint After Next': () => exportSprintToExcel(tasks, 'Sprint After Next', afterSprint?.name   ?? 'ספרינט הבא הבא'),
+  } as const;
 
   const handleWizardComplete = () => {
     setWizardOpen(false);
@@ -54,6 +62,7 @@ function DevBoardInner() {
           <p className="text-sm text-gray-500 mt-0.5">{tasks.length} משימות</p>
         </div>
         <div className="flex gap-2 items-center">
+          <ProjectFilter value={projectFilter} onChange={setProjectFilter} />
           <button onClick={load} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
             <RefreshCw size={16} />
           </button>
@@ -85,15 +94,15 @@ function DevBoardInner() {
           <div className="pt-4 overflow-x-auto">
             <BoardView
               columns={DEV_COLUMNS}
-              tasks={tasks}
+              tasks={projectFilter ? tasks.filter(t => t.project_id === projectFilter) : tasks}
               team="Development"
               onRefresh={load}
               showTeam={false}
-              initialOpenTaskId={initialOpen}
+              columnDownload={sprintDownloads}
             />
           </div>
 
-          <WorkloadTable tasks={tasks} />
+          <WorkloadTable tasks={tasks} projectFilter={projectFilter} />
         </div>
       )}
 

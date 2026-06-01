@@ -9,7 +9,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const numId = Number(params.id);
   const body = await req.json();
 
-  const allowed = ['can_see_master', 'can_see_spec', 'can_see_design', 'can_see_dev', 'is_admin'];
+  const allowed = ['can_see_master', 'can_see_spec', 'can_see_design', 'can_see_dev', 'can_see_qa', 'is_admin'];
   const fields = Object.keys(body).filter((k) => allowed.includes(k));
 
   if (!fields.length) {
@@ -39,6 +39,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     can_see_spec: updated.can_see_spec,
     can_see_design: updated.can_see_design,
     can_see_dev: updated.can_see_dev,
+    can_see_qa: updated.can_see_qa,
     daily_hours: updated.daily_hours,
     created_at: updated.created_at,
   });

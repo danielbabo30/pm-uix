@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ChevronDown, ChevronRight, Calendar, Package, Layers, Loader2 } from 'lucide-react';
 import type { Sprint, Task } from '@/lib/types';
 import { fmtDate } from '@/lib/dateUtils';
-import TaskModal from '@/components/task/TaskModal';
+import { useTaskModal } from '@/lib/taskModalContext';
 
 interface ArchivedSprint extends Sprint {
   task_count: number;
@@ -255,10 +255,10 @@ function VersionMatrix({ sprints }: { sprints: ArchivedSprint[] }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function ArchivePage() {
-  const [tab,            setTab]            = useState<'log' | 'matrix'>('log');
-  const [sprints,        setSprints]        = useState<ArchivedSprint[]>([]);
-  const [loading,        setLoading]        = useState(true);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const { openTask } = useTaskModal();
+  const [tab,     setTab]     = useState<'log' | 'matrix'>('log');
+  const [sprints, setSprints] = useState<ArchivedSprint[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/archive/sprints')
@@ -302,15 +302,6 @@ export default function ArchivePage() {
         </button>
       </div>
 
-      {/* Task detail popup */}
-      {selectedTaskId && (
-        <TaskModal
-          taskId={selectedTaskId}
-          onClose={() => setSelectedTaskId(null)}
-          onUpdate={() => {}}
-        />
-      )}
-
       {/* Content */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
@@ -338,7 +329,7 @@ export default function ArchivePage() {
                     key={s.id}
                     sprint={s}
                     onChange={handleDateChange}
-                    onTaskClick={setSelectedTaskId}
+                    onTaskClick={openTask}
                   />
                 ))}
               </tbody>

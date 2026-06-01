@@ -5,39 +5,51 @@ import BoardView from './BoardView';
 import { BOARD_COLUMNS, TEAM_LABELS } from '@/lib/constants';
 import type { Task, Team, TaskStatus } from '@/lib/types';
 import { RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import ProjectFilter from '@/components/ui/ProjectFilter';
+import { exportSprintToExcel } from '@/lib/sprintExcel';
+import type { Sprint } from '@/lib/types';
 
-// Display order: Design first, then Specification, then Development
-const DISPLAY_TEAMS: Team[] = ['Design', 'Specification', 'Development'];
+// Display order
+const DISPLAY_TEAMS: Team[] = ['Design', 'Specification', 'Development', 'QA'];
 
 // Header background per team — pastel, applies only to the title row
 const TEAM_HEADER_BG: Record<Team, string> = {
   Specification: 'bg-violet-50  hover:bg-violet-100 border-violet-200 text-violet-800',
   Design:        'bg-pink-50    hover:bg-pink-100   border-pink-200   text-pink-800',
   Development:   'bg-teal-50    hover:bg-teal-100   border-teal-200   text-teal-800',
+  QA:            'bg-amber-50   hover:bg-amber-100  border-amber-200  text-amber-800',
 };
 
 const TEAM_COUNT_BG: Record<Team, string> = {
   Specification: 'bg-violet-100 text-violet-600',
   Design:        'bg-pink-100   text-pink-600',
   Development:   'bg-teal-100   text-teal-700',
+  QA:            'bg-amber-100  text-amber-700',
 };
 
 export default function MasterView() {
-  const [allTasks,     setAllTasks]     = useState<Task[]>([]);
-  const [loading,      setLoading]      = useState(true);
-  const [transferError,setTransferError]= useState('');
+  const [allTasks,      setAllTasks]      = useState<Task[]>([]);
+  const [sprints,       setSprints]       = useState<Sprint[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [transferError, setTransferError] = useState('');
+  const [projectFilter, setProjectFilter] = useState<number | null>(null);
   // All sections expanded by default
   const [expanded, setExpanded] = useState<Record<Team, boolean>>({
     Specification: true,
     Design:        true,
     Development:   true,
+    QA:            true,
   });
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/tasks');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setAllTasks(await res.json());
+      const [tasksRes, sprintsRes] = await Promise.all([
+        fetch('/api/tasks'),
+        fetch('/api/sprints'),
+      ]);
+      if (!tasksRes.ok) throw new Error(`HTTP ${tasksRes.status}`);
+      setAllTasks(await tasksRes.json());
+      if (sprintsRes.ok) setSprints(await sprintsRes.json());
     } catch (e) {
       console.error('load tasks error', e);
     } finally {
@@ -64,7 +76,14 @@ export default function MasterView() {
   const toggle = (team: Team) =>
     setExpanded(prev => ({ ...prev, [team]: !prev[team] }));
 
-  const tasksByTeam = (team: Team) => allTasks.filter(t => t.responsible_team === team);
+  const filteredTasks = projectFilter ? allTasks.filter(t => t.project_id === projectFilter) : allTasks;
+  const tasksByTeam = (team: Team) => filteredTasks.filter(t => t.responsible_team === team);
+
+  const sprintDownloads = {
+    'Current Sprint':    () => exportSprintToExcel(allTasks, 'Current Sprint',    sprints.find(s => s.sprint_order === 0)?.name ?? 'ספרינט נוכחי'),
+    'Next Sprint':       () => exportSprintToExcel(allTasks, 'Next Sprint',       sprints.find(s => s.sprint_order === 1)?.name ?? 'ספרינט הבא'),
+    'Sprint After Next': () => exportSprintToExcel(allTasks, 'Sprint After Next', sprints.find(s => s.sprint_order === 2)?.name ?? 'ספרינט הבא הבא'),
+  } as const;
 
   return (
     <div className="flex flex-col h-full" dir="rtl">
@@ -72,14 +91,17 @@ export default function MasterView() {
       <div className="flex items-center justify-between px-6 py-4 border-b bg-white flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-gray-800">תצוגה כללית</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{allTasks.length} משימות סה&quot;כ</p>
+          <p className="text-sm text-gray-500 mt-0.5">{filteredTasks.length} משימות סה&quot;כ</p>
         </div>
-        <button
-          onClick={load}
-          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-        >
-          <RefreshCw size={16} />
-        </button>
+        <div className="flex items-center gap-2">
+          <ProjectFilter value={projectFilter} onChange={setProjectFilter} />
+          <button
+            onClick={load}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+          >
+            <RefreshCw size={16} />
+          </button>
+        </div>
       </div>
 
       {transferError && (
@@ -128,6 +150,7 @@ export default function MasterView() {
                       onRefresh={load}
                       showTeam={false}
                       onTransfer={handleTransfer}
+                      columnDownload={team === 'Development' ? sprintDownloads : undefined}
                     />
                   </div>
                 )}

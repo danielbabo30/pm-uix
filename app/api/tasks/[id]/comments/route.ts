@@ -7,14 +7,9 @@ import {
   NotificationModel,
   getNextId,
 } from '@/db/mongodb';
+import { sendMentionEmail } from '@/lib/email';
 
 type Params = { params: { id: string } };
-
-const TEAM_PATH: Record<string, string> = {
-  Specification: 'spec',
-  Design: 'design',
-  Development: 'dev',
-};
 
 export async function GET(_req: NextRequest, { params }: Params) {
   await connectDB();
@@ -68,27 +63,41 @@ export async function POST(req: NextRequest, { params }: Params) {
     body: body.body.trim(),
   });
 
-  // Create notifications for @mentions
+  // Create notifications + email for @mentions
   const mentions = (body.body.match(/@(\S+)/g) ?? []).map((m: string) => m.slice(1));
 
   if (mentions.length > 0) {
     const task = await TaskModel.findById(params.id);
     if (task) {
-      const teamPath = TEAM_PATH[task.responsible_team ?? ''] ?? 'master';
-      const link = `/${teamPath}?open=${params.id}`;
+      const link     = `/?task=${params.id}`;
       const authorId = body.author_id || null;
+      const authorName = body.author_name || 'מישהו';
 
       for (const mention of mentions) {
         const mentioned = await UserModel.findOne({ name: mention });
-        if (mentioned && mentioned.id !== authorId) {
-          const notifId = await getNextId('notifications');
-          await NotificationModel.create({
-            id: notifId,
-            user_id: mentioned.id,
-            type: 'mention',
-            message: `${body.author_name || 'מישהו'} תייג אותך בתגובה על משימה #${params.id}`,
-            link,
-          });
+        if (!mentioned || mentioned.id === authorId) continue;
+
+        // In-app notification
+        const notifId = await getNextId('notifications');
+        await NotificationModel.create({
+          id: notifId,
+          user_id: mentioned.id,
+          type: 'mention',
+          message: `${authorName} תייג אותך בתגובה על משימה #${params.id}`,
+          link,
+        });
+
+        // Email — fire-and-forget
+        if (mentioned.email) {
+          sendMentionEmail({
+            toEmail:         mentioned.email,
+            toName:          mentioned.name,
+            taskId:          params.id,
+            taskTitle:       task.title,
+            taskDescription: task.description ?? null,
+            mentionedBy:     authorName,
+            commentBody:     body.body,
+          }).catch(err => console.error('[email:mention]', err));
         }
       }
     }

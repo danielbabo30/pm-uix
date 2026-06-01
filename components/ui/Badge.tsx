@@ -14,8 +14,9 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
 // Muted single-hue per team — soft enough to not compete with card content
 const TEAM_BADGE: Record<Team, string> = {
   Specification: 'bg-violet-50 text-violet-500 border border-violet-100',
-  Design:        'bg-pink-50  text-pink-500  border border-pink-100',
-  Development:   'bg-teal-50  text-teal-600  border border-teal-100',
+  Design:        'bg-pink-50   text-pink-500   border border-pink-100',
+  Development:   'bg-teal-50   text-teal-600   border border-teal-100',
+  QA:            'bg-amber-50  text-amber-600  border border-amber-100',
 };
 
 export function TeamBadge({ team }: { team: Team }) {

@@ -3,7 +3,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { Task, Holiday, UserVacation, Sprint } from '@/lib/types';
 import { countWorkDays, countCombinedDaysOff, fmtDate } from '@/lib/dateUtils';
-import { Settings, X } from 'lucide-react';
+import { Settings, X, Download } from 'lucide-react';
+import { exportSprintToExcel } from '@/lib/sprintExcel';
 
 const SPRINT_STATUSES = ['Current Sprint', 'Next Sprint', 'Sprint After Next'] as const;
 
@@ -161,7 +162,9 @@ function SprintConfigModal({
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-export default function WorkloadTable({ tasks }: { tasks: Task[] }) {
+export default function WorkloadTable({ tasks, projectFilter }: { tasks: Task[]; projectFilter?: number | null }) {
+  const filteredTasks = projectFilter ? tasks.filter(t => t.project_id === projectFilter) : tasks;
+  tasks = filteredTasks;
   const [activeTab, setActiveTab]           = useState(0);
   const [holidays, setHolidays]             = useState<Holiday[]>([]);
   const [allVacations, setAllVacations]     = useState<AllVacations>({});
@@ -244,6 +247,19 @@ export default function WorkloadTable({ tasks }: { tasks: Task[] }) {
             </span>
           )}
         </div>
+        <button
+          onClick={() => exportSprintToExcel(
+            tasks,
+            sprintStatus,
+            activeSprint?.name ?? sprintStatus,
+          )}
+          disabled={sprintTaskCount === 0}
+          title="הורד אקסל לספרינט זה"
+          className="flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Download size={14} />
+          הורד אקסל
+        </button>
       </div>
 
       {/* Tabs — tab text switches sprint, gear icon opens config */}

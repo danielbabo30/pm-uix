@@ -37,12 +37,20 @@ export default function CreateTaskModal({
 
   const isDevTeam = team === 'Development';
 
-  // Role filter for "גורם מבצע" per team
+  // Role filter + auto-assign logic per team for "גורם מבצע"
   const assigneeRoles: UserRole[] | undefined =
     team === 'Design'        ? ['UI', 'UX'] :
     team === 'Specification' ? ['מנתח מערכות'] :
+    team === 'QA'            ? ['QA'] :
     undefined;
-  const autoAssignAssignee = team === 'Specification';
+
+  // Auto-assign to the ONE person of this specific role
+  const assigneePreferRole: UserRole | undefined =
+    team === 'Design' ? 'UX' : undefined;
+
+  const autoAssignAssignee =
+    team === 'Specification' ||
+    team === 'QA';
 
   const reset = () => {
     setTitle(''); setDescription(''); setPriority('Medium');
@@ -120,7 +128,7 @@ export default function CreateTaskModal({
               value={team}
               onChange={e => setTeam(e.target.value as Team)}
             >
-              {(['Specification', 'Design', 'Development'] as Team[]).map(t => (
+              {(['Specification', 'Design', 'Development', 'QA'] as Team[]).map(t => (
                 <option key={t} value={t}>{TEAM_LABELS[t]}</option>
               ))}
             </select>
@@ -143,6 +151,7 @@ export default function CreateTaskModal({
             onChange={setAssigneeId}
             roles={assigneeRoles}
             autoAssign={autoAssignAssignee}
+            preferRole={assigneePreferRole}
           />
         </div>
 
@@ -155,13 +164,15 @@ export default function CreateTaskModal({
                 label="מפתח Back-end"
                 value={backendDevId}
                 onChange={setBackendDevId}
-                roles={['מפתח Be', 'Fs']}
+                roles={['מפתח Be', 'Fs', 'ראש צוות פיתוח']}
+                preferRole="ראש צוות פיתוח"
               />
               <UserPicker
                 label="מפתח Front-end"
                 value={frontendDevId}
                 onChange={setFrontendDevId}
-                roles={['מפתח Fe', 'Fs']}
+                roles={['מפתח Fe', 'Fs', 'ראש צוות פיתוח']}
+                preferRole="ראש צוות פיתוח"
               />
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-gray-600">מאמץ Back-end</label>

@@ -12,8 +12,8 @@ import {
 } from '@dnd-kit/core';
 import Column from './Column';
 import TaskCard from './TaskCard';
-import TaskModal from '@/components/task/TaskModal';
 import CreateTaskModal from '@/components/task/CreateTaskModal';
+import { useTaskModal } from '@/lib/taskModalContext';
 import type { Task, Team, TaskStatus } from '@/lib/types';
 
 // All columns share the same subtle top accent — uniform, no rainbow
@@ -26,12 +26,13 @@ interface BoardViewProps {
   onRefresh: () => void;
   showTeam?: boolean;
   onTransfer?: (taskId: string, toTeam: Team, toStatus: TaskStatus) => void;
-  initialOpenTaskId?: string | null;
+  columnAccentOverride?: Partial<Record<TaskStatus, string>>;
+  columnDownload?: Partial<Record<TaskStatus, () => void>>;
 }
 
-export default function BoardView({ columns, tasks, team, onRefresh, showTeam, onTransfer, initialOpenTaskId }: BoardViewProps) {
+export default function BoardView({ columns, tasks, team, onRefresh, showTeam, onTransfer, columnAccentOverride, columnDownload }: BoardViewProps) {
+  const { openTask } = useTaskModal();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [openTaskId, setOpenTaskId] = useState<string | null>(initialOpenTaskId ?? null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createStatus, setCreateStatus] = useState<TaskStatus | undefined>();
   const [error, setError] = useState('');
@@ -99,10 +100,11 @@ export default function BoardView({ columns, tasks, team, onRefresh, showTeam, o
               key={status}
               status={status}
               tasks={tasksByColumn(status)}
-              onTaskClick={setOpenTaskId}
+              onTaskClick={(id) => openTask(id, onRefresh)}
               showTeam={showTeam}
-              accentClass={COLUMN_ACCENT[status]}
+              accentClass={columnAccentOverride?.[status] ?? COLUMN_ACCENT[status]}
               onTransfer={onTransfer}
+              onDownload={columnDownload?.[status]}
               onAddTask={() => {
                 setCreateStatus(status);
                 setCreateOpen(true);
@@ -119,14 +121,6 @@ export default function BoardView({ columns, tasks, team, onRefresh, showTeam, o
           )}
         </DragOverlay>
       </DndContext>
-
-      {openTaskId && (
-        <TaskModal
-          taskId={openTaskId}
-          onClose={() => setOpenTaskId(null)}
-          onUpdate={onRefresh}
-        />
-      )}
 
       <CreateTaskModal
         open={createOpen}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import { connectDB, TaskModel, formatTask, getNextTaskId } from '@/db/mongodb';
 
 const DEFAULT_STATUS: Record<string, string> = {
@@ -14,10 +15,14 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const team = searchParams.get('team');
 
-    const filter: Record<string, unknown> = { is_archived: 0 };
-    if (team) filter.responsible_team = team;
+    const projectId = searchParams.get('project_id');
 
-    const tasks = await TaskModel.find(filter).sort({ sequence: 1, sort_order: 1 });
+    const filter: Record<string, unknown> = { is_archived: { $ne: 1 } };
+    if (team)      filter.responsible_team = team;
+    if (projectId) filter.project_id = Number(projectId);
+
+    const col = mongoose.connection.db.collection('tasks');
+    const tasks = await col.find(filter).sort({ sequence: 1, sort_order: 1 }).toArray();
 
     const formatted = await Promise.all(tasks.map((t) => formatTask(t)));
     return NextResponse.json(formatted);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Archive, Loader2 } from 'lucide-react';
-import TaskModal from '@/components/task/TaskModal';
+import { useTaskModal } from '@/lib/taskModalContext';
 import { TEAM_LABELS } from '@/lib/constants';
 import type { SearchResultItem } from '@/app/api/search/route';
 
@@ -16,12 +16,12 @@ function useDebounce(value: string, delay: number) {
 }
 
 export default function GlobalSearch() {
-  const [open,          setOpen]          = useState(false);
-  const [query,         setQuery]         = useState('');
-  const [results,       setResults]       = useState<SearchResultItem[]>([]);
-  const [loading,       setLoading]       = useState(false);
-  const [activeIdx,     setActiveIdx]     = useState(-1);
-  const [selectedTask,  setSelectedTask]  = useState<string | null>(null);
+  const { openTask } = useTaskModal();
+  const [open,      setOpen]    = useState(false);
+  const [query,     setQuery]   = useState('');
+  const [results,   setResults] = useState<SearchResultItem[]>([]);
+  const [loading,   setLoading] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
 
   const inputRef    = useRef<HTMLInputElement>(null);
   const wrapperRef  = useRef<HTMLDivElement>(null);
@@ -65,9 +65,9 @@ export default function GlobalSearch() {
   }, []);
 
   const pickResult = useCallback((item: SearchResultItem) => {
-    setSelectedTask(item.id);
+    openTask(item.id);
     close();
-  }, [close]);
+  }, [openTask, close]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!results.length) return;
@@ -200,14 +200,6 @@ export default function GlobalSearch() {
         )}
       </div>
 
-      {/* Task detail modal */}
-      {selectedTask && (
-        <TaskModal
-          taskId={selectedTask}
-          onClose={() => setSelectedTask(null)}
-          onUpdate={() => {}}
-        />
-      )}
     </>
   );
 }

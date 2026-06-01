@@ -144,6 +144,13 @@ export default function TaskCard({ task, onClick, showTeam, onTransfer }: TaskCa
               {task.assignee_name}
             </div>
           )}
+
+          {/* Effort estimate */}
+          {task.effort != null && (
+            <div className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md font-medium">
+              ⏱ {task.effort}ש׳
+            </div>
+          )}
         </div>
 
         {/* Transfer button */}

@@ -1,4 +1,4 @@
-export type Team = 'Specification' | 'Design' | 'Development';
+export type Team = 'Specification' | 'Design' | 'Development' | 'QA';
 export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
 
 export type SpecStatus = 'Awaiting Spec' | 'In Spec' | 'Awaiting Client' | 'Done';
@@ -14,18 +14,24 @@ export type DevStatus =
   | 'Current Sprint'
   | 'Next Sprint'
   | 'Sprint After Next';
+export type QAStatus =
+  | 'Ready for QA'
+  | 'In QA'
+  | 'Return to Dev'
+  | 'QA Done';
 
-export type TaskStatus = SpecStatus | DesignStatus | DevStatus;
+export type TaskStatus = SpecStatus | DesignStatus | DevStatus | QAStatus;
 
-export type UserRole = 'מנתח מערכות' | 'UI' | 'UX' | 'מפתח Be' | 'מפתח Fe' | 'Fs' | 'ראש צוות פיתוח';
+export type UserRole = 'מנתח מערכות' | 'UI' | 'UX' | 'מפתח Be' | 'מפתח Fe' | 'Fs' | 'ראש צוות פיתוח' | 'QA';
 
-export const USER_ROLES: UserRole[] = ['מנתח מערכות', 'UI', 'UX', 'מפתח Be', 'מפתח Fe', 'Fs', 'ראש צוות פיתוח'];
+export const USER_ROLES: UserRole[] = ['מנתח מערכות', 'UI', 'UX', 'מפתח Be', 'מפתח Fe', 'Fs', 'ראש צוות פיתוח', 'QA'];
 
 export interface User {
   id: number;
   name: string;
   email: string | null;
   role: UserRole | null;
+  is_admin: number;
   daily_hours: number | null;
   created_at: string;
 }
@@ -66,6 +72,10 @@ export interface Task {
   frontend_dev_name?: string | null;
   backend_effort: number | null;
   frontend_effort: number | null;
+  effort: number | null;
+  project_id: number | null;
+  project_name?: string | null;
+  work_week: string | null;  // "YYYY-WW"
   dev_start_date: string | null;
   dev_end_date: string | null;
   test_start_date: string | null;
@@ -80,6 +90,12 @@ export interface Task {
   updated_at: string;
   links?: TaskLink[];
   comments?: Comment[];
+}
+
+export interface Project {
+  id: number;
+  name: string;
+  created_at: string;
 }
 
 export interface Holiday {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Modal from '@/components/ui/Modal';
 import UserPicker from './UserPicker';
 import DescriptionEditor from './DescriptionEditor';
@@ -8,8 +8,74 @@ import ExternalLinks from './ExternalLinks';
 import CommentThread from './CommentThread';
 import TaskHistoryPanel from './TaskHistoryPanel';
 import { TRANSFER_RULES, STATUS_LABELS, BOARD_COLUMNS, TEAM_LABELS } from '@/lib/constants';
-import type { Task, Team, Priority, TaskStatus } from '@/lib/types';
-import { Copy, Trash2, ArrowRightLeft, CheckSquare, Square, History } from 'lucide-react';
+import type { Task, Team, Priority, TaskStatus, Project } from '@/lib/types';
+import { currentWeekStr, addWeeks, weekLabel } from '@/lib/weekUtils';
+import { Copy, Trash2, ArrowRightLeft, History, Sparkles } from 'lucide-react';
+import AISpecChat from './AISpecChat';
+import { useCurrentUser } from '@/lib/userContext';
+
+function EffortField({ taskId, initialValue, onSaved }: {
+  taskId: string;
+  initialValue: number | null;
+  onSaved: () => void;
+}) {
+  const [value,   setValue]  = useState<string>(initialValue != null ? String(initialValue) : '');
+  const [saving,  setSaving] = useState(false);
+  const [error,   setError]  = useState('');
+  const savedRef = useRef(false);
+
+  // Sync only when initialValue changes after a successful save (not on every render)
+  useEffect(() => {
+    if (savedRef.current) {
+      setValue(initialValue != null ? String(initialValue) : '');
+      savedRef.current = false;
+    }
+  }, [initialValue]);
+
+  const save = async () => {
+    setSaving(true);
+    setError('');
+    const res = await fetch(`/api/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ effort: value !== '' ? Number(value) : null }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error || `שגיאה (${res.status})`);
+      return;
+    }
+    savedRef.current = true;
+    onSaved();
+  };
+
+  return (
+    <div className="border rounded-xl p-4 flex flex-col gap-3 bg-purple-50">
+      <span className="text-sm font-semibold text-purple-700">הערכת מאמץ</span>
+      <div className="flex items-center gap-3">
+        <input
+          type="number"
+          min="0"
+          step="0.5"
+          placeholder="שעות"
+          className="border rounded-lg px-3 py-2 text-sm w-32"
+          value={value}
+          onChange={e => setValue(e.target.value)}
+        />
+        <span className="text-sm text-gray-500">שעות</span>
+        <button
+          onClick={save}
+          disabled={saving}
+          className="bg-purple-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-purple-600 disabled:opacity-50 transition-colors"
+        >
+          {saving ? 'שומר...' : 'שמור'}
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+    </div>
+  );
+}
 
 interface TaskModalProps {
   taskId: string | null;
@@ -18,6 +84,7 @@ interface TaskModalProps {
 }
 
 export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps) {
+  const { user } = useCurrentUser();
   const [task,         setTask]        = useState<Task | null>(null);
   const [editing,      setEditing]     = useState<Partial<Task>>({});
   const [saving,       setSaving]      = useState(false);
@@ -25,6 +92,8 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
   const [transferring, setTransferring]= useState<string | null>(null);
   const [error,        setError]       = useState('');
   const [showHistory,  setShowHistory] = useState(false);
+  const [showAISpec,   setShowAISpec]  = useState(false);
+  const [projects,     setProjects]    = useState<Project[]>([]);
 
   const load = useCallback(async () => {
     if (!taskId) return;
@@ -35,6 +104,10 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
   }, [taskId]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    fetch('/api/projects').then(r => r.json()).then(d => setProjects(Array.isArray(d) ? d : []));
+  }, []);
 
   if (!task) return null;
 
@@ -94,14 +167,9 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
 
   const applicableTransfers = TRANSFER_RULES.filter((r) => r.fromTeam === task.responsible_team);
   const isDevTeam  = merged.responsible_team === 'Development';
-  const statusOptions: TaskStatus[] = BOARD_COLUMNS[merged.responsible_team] as TaskStatus[];
+  const statusOptions: TaskStatus[] = (BOARD_COLUMNS[merged.responsible_team] ?? []) as TaskStatus[];
 
-  // Role filters per team for the "גורם מבצע" picker
-  const assigneeRoles =
-    merged.responsible_team === 'Design'        ? (['UI', 'UX'] as const) :
-    merged.responsible_team === 'Specification' ? (['מנתח מערכות'] as const) :
-    undefined;
-  const autoAssignAssignee = merged.responsible_team === 'Specification';
+  const autoAssignAssignee = false;
 
   return (
     <Modal open onClose={() => { save(); onClose(); }} wide>
@@ -158,6 +226,17 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
               ))}
             </div>
 
+            {/* AI Spec button — visible only for Specification team + admin users */}
+            {task.responsible_team === 'Specification' && user?.is_admin === 1 && (
+              <button
+                onClick={() => setShowAISpec(true)}
+                title="כתיבת אפיון עם AI"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-200 transition-colors"
+              >
+                <Sparkles size={14} />
+                אפיון AI
+              </button>
+            )}
             <button
               onClick={() => setShowHistory(h => !h)}
               title="היסטוריית פעולות"
@@ -186,7 +265,7 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
               onChange={(e) => setEditing((p) => ({ ...p, responsible_team: e.target.value as Team }))}
               onBlur={save}
             >
-              {(['Specification', 'Design', 'Development'] as Team[]).map((t) => (
+              {(['Specification', 'Design', 'Development', 'QA'] as Team[]).map((t) => (
                 <option key={t} value={t}>{TEAM_LABELS[t]}</option>
               ))}
             </select>
@@ -221,9 +300,64 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
             label="גורם מבצע"
             value={merged.assignee_id ?? null}
             onChange={id => setEditing(p => ({ ...p, assignee_id: id }))}
-            roles={assigneeRoles as import('@/lib/types').UserRole[] | undefined}
-            autoAssign={autoAssignAssignee}
           />
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-600">שבוע עבודה</label>
+            {(() => {
+              const cur = currentWeekStr();
+              const options = [cur, ...Array.from({ length: 4 }, (_, i) => addWeeks(cur, i + 1))];
+              // If task already has a week outside the quick list, include it too
+              const taskWeek = merged.work_week;
+              if (taskWeek && !options.includes(taskWeek)) options.unshift(taskWeek);
+              return (
+                <select
+                  className="border rounded-lg px-3 py-2 text-sm"
+                  value={merged.work_week ?? ''}
+                  onChange={async e => {
+                    const val = e.target.value || null;
+                    setEditing(p => ({ ...p, work_week: val }));
+                    await fetch(`/api/tasks/${task.id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ work_week: val }),
+                    });
+                    load(); onUpdate();
+                  }}
+                >
+                  <option value="">ללא שבוע</option>
+                  {options.map((w, i) => (
+                    <option key={w} value={w}>
+                      {weekLabel(w)}{w === cur ? ' (נוכחי)' : ''}
+                    </option>
+                  ))}
+                </select>
+              );
+            })()}
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-600">פרויקט</label>
+            <select
+              className="border rounded-lg px-3 py-2 text-sm"
+              value={merged.project_id ?? ''}
+              onChange={async e => {
+                const val = e.target.value ? Number(e.target.value) : null;
+                setEditing(p => ({ ...p, project_id: val }));
+                await fetch(`/api/tasks/${task.id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ project_id: val }),
+                });
+                load();
+                onUpdate();
+              }}
+            >
+              <option value="">ללא פרויקט</option>
+              {projects.map(pr => (
+                <option key={pr.id} value={pr.id}>{pr.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Description */}
@@ -237,25 +371,9 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
           />
         </div>
 
-        {/* Tests checkbox */}
-        <button
-          onClick={() => {
-            const newVal = !merged.tests_passed;
-            setEditing((p) => ({ ...p, tests_passed: newVal }));
-            fetch(`/api/tasks/${task.id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ tests_passed: newVal }),
-            }).then(() => onUpdate());
-          }}
-          className="flex items-center gap-2 text-sm text-gray-700 hover:text-green-600 w-fit"
-        >
-          {merged.tests_passed
-            ? <CheckSquare size={18} className="text-green-500" />
-            : <Square size={18} className="text-gray-400" />
-          }
-          בוצעו תרחישי בדיקות
-        </button>
+
+        {/* Effort field — all teams */}
+        <EffortField taskId={task.id} initialValue={task.effort ?? null} onSaved={() => { load(); onUpdate(); }} />
 
         {/* Dev-specific fields */}
         {isDevTeam && (
@@ -264,10 +382,12 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
             <div className="grid grid-cols-2 gap-3">
               <UserPicker label="מפתח Back-end" value={merged.backend_dev_id ?? null}
                 onChange={id => setEditing(p => ({ ...p, backend_dev_id: id }))}
-                roles={['מפתח Be', 'Fs']} />
+                roles={['מפתח Be', 'Fs', 'ראש צוות פיתוח']}
+                preferRole="ראש צוות פיתוח" />
               <UserPicker label="מפתח Front-end" value={merged.frontend_dev_id ?? null}
                 onChange={id => setEditing(p => ({ ...p, frontend_dev_id: id }))}
-                roles={['מפתח Fe', 'Fs']} />
+                roles={['מפתח Fe', 'Fs', 'ראש צוות פיתוח']}
+                preferRole="ראש צוות פיתוח" />
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-gray-600">מאמץ Back-end</label>
                 <input type="number" className="border rounded-lg px-3 py-2 text-sm"
@@ -329,6 +449,15 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
       </div>
       </div>
       </div>
+      {/* AI Spec Chat overlay */}
+      {showAISpec && (
+        <AISpecChat
+          taskId={task.id}
+          taskTitle={task.title}
+          taskDescription={task.description ?? ''}
+          onClose={() => setShowAISpec(false)}
+        />
+      )}
     </Modal>
   );
 }

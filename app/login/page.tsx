@@ -42,11 +42,12 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={submit} className="flex flex-col gap-4">
+        <form onSubmit={submit} autoComplete="on" className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">כתובת מייל</label>
             <input
               type="email"
+              name="email"
               autoComplete="email"
               required
               className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
@@ -60,6 +61,7 @@ export default function LoginPage() {
             <label className="text-sm font-medium text-gray-700">סיסמה</label>
             <input
               type="password"
+              name="password"
               autoComplete="current-password"
               required
               className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"

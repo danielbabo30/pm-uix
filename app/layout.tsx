@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { UserProvider } from '@/lib/userContext';
 import { NotificationsProvider } from '@/lib/notificationsContext';
+import { TaskModalProvider } from '@/lib/taskModalContext';
 import NavBar from '@/components/ui/NavBar';
 import NotificationsSidebar from '@/components/ui/NotificationsSidebar';
 
@@ -16,11 +17,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-white min-h-screen flex flex-col antialiased">
         <UserProvider>
           <NotificationsProvider>
-            <NavBar />
-            <main className="flex-1 flex flex-col overflow-hidden">
-              {children}
-            </main>
-            <NotificationsSidebar />
+            <TaskModalProvider>
+              <NavBar />
+              <main className="flex-1 flex flex-col overflow-hidden">
+                {children}
+              </main>
+              <NotificationsSidebar />
+            </TaskModalProvider>
           </NotificationsProvider>
         </UserProvider>
       </body>
