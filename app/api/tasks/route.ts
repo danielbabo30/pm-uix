@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     if (team)      filter.responsible_team = team;
     if (projectId) filter.project_id = Number(projectId);
 
-    const col = mongoose.connection.db.collection('tasks');
+    const col = mongoose.connection.db!.collection('tasks');
     const tasks = await col.find(filter).sort({ sequence: 1, sort_order: 1 }).toArray();
 
     const formatted = await Promise.all(tasks.map((t) => formatTask(t)));

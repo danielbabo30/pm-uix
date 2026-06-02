@@ -44,7 +44,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   try {
     await connectDB();
 
-    const col = mongoose.connection.db.collection('tasks');
+    const col = mongoose.connection.db!.collection('tasks');
     const numId2 = parseInt(params.id, 10);
     const orG: object[] = [{ _id: params.id }];
     if (!isNaN(numId2)) orG.push({ _id: numId2 });
@@ -102,7 +102,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     const body = await req.json();
 
-    const col = mongoose.connection.db.collection('tasks');
+    const col = mongoose.connection.db!.collection('tasks');
     const numId = parseInt(params.id, 10);
     const orClauses: object[] = [{ _id: params.id }];
     if (!isNaN(numId)) orClauses.push({ _id: numId });
@@ -227,7 +227,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     await connectDB();
-    const col = mongoose.connection.db.collection('tasks');
+    const col = mongoose.connection.db!.collection('tasks');
     const numIdD = parseInt(params.id, 10);
     const orD: object[] = [{ _id: params.id }];
     if (!isNaN(numIdD)) orD.push({ _id: numIdD });
