@@ -121,7 +121,7 @@ function buildEntries(
   // ── Convert groups → sorted entries ───────────────────────────────────────
   const entries: { title: string; start_date: string; end_date: string }[] = [];
 
-  for (const { title, dates } of groups.values()) {
+  for (const { title, dates } of Array.from(groups.values())) {
     if (!dates.length) continue;
     const sorted = [...dates].sort();
     entries.push({

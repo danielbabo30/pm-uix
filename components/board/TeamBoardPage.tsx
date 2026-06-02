@@ -64,10 +64,10 @@ function TeamBoardInner() {
   // Columns — for "all" show both teams' columns merged (deduplicated)
   const columns: TaskStatus[] =
     activeTab === 'all'
-      ? [...new Set([
+      ? Array.from(new Set([
           ...(BOARD_COLUMNS['Specification'] as TaskStatus[]),
           ...(BOARD_COLUMNS['Design'] as TaskStatus[]),
-        ])]
+        ]))
       : BOARD_COLUMNS[activeTab as Team] as TaskStatus[];
 
   // Counts (unfiltered by project, like before)

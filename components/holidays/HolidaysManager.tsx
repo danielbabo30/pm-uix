@@ -26,7 +26,7 @@ function ImportPanel({ onImported }: { onImported: () => void }) {
   const [open,       setOpen]       = useState(false);
   const [year,       setYear]       = useState(currentYear);
   const [cats,       setCats]       = useState<Set<CategoryKey>>(
-    new Set(['major', 'modern', 'chanukah', 'purim'])
+    new Set<CategoryKey>(['major', 'modern', 'chanukah', 'purim'])
   );
   const [loading,    setLoading]    = useState(false);
   const [result,     setResult]     = useState<{ added: number; skipped: number } | null>(null);

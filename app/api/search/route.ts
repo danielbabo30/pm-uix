@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     // Resolve sprint names for archived tasks
-    const sprintIds = [...new Set(archived.map((t: { archived_sprint_id: number | null }) => t.archived_sprint_id).filter(Boolean))];
+    const sprintIds = Array.from(new Set(archived.map((t: { archived_sprint_id: number | null }) => t.archived_sprint_id).filter(Boolean)));
     const sprintMap: Record<number, string> = {};
     if (sprintIds.length) {
       const sprints = await SprintModel.find({ id: { $in: sprintIds } }).select('id name');
