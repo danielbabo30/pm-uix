@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { Task, Project, User } from '@/lib/types';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { currentWeekStr, addWeeks, weekLabel, weekBounds } from '@/lib/weekUtils';
@@ -8,7 +8,6 @@ import { countWorkDays, countCombinedDaysOff } from '@/lib/dateUtils';
 import type { Holiday, UserVacation } from '@/lib/types';
 
 const DEFAULT_DAILY = 8;
-const WORK_DAYS     = 5;
 const VISIBLE       = 6; // tabs visible at once
 
 interface MemberRow {
@@ -104,7 +103,7 @@ function WeekTabs({ active, onChange }: { active: string; onChange: (w: string) 
                 : 'border-transparent text-gray-400 hover:text-gray-700'
             }`}
           >
-            {(() => { const [y, wk] = w.split('-'); return `שבוע ${Number(wk)}${isCur ? ' ●' : ''}`; })()}
+            {(() => { const [, wk] = w.split('-'); return `שבוע ${Number(wk)}${isCur ? ' ●' : ''}`; })()}
             <span className="block text-[10px] text-gray-300">{w.split('-')[0]}</span>
           </button>
         );

@@ -3,7 +3,7 @@
 import { useMemo, useRef, useEffect } from 'react';
 import type { Task } from '@/lib/types';
 import { useTaskModal } from '@/lib/taskModalContext';
-import { currentWeekStr, addWeeks, weekBounds } from '@/lib/weekUtils';
+import { currentWeekStr, addWeeks } from '@/lib/weekUtils';
 
 const CELL_W = 80;   // px per week column
 const ROW_H  = 40;   // px per task row
